@@ -308,7 +308,11 @@ export class SimplebleAdapter extends EventEmitter implements BluetoothAdapter {
     public async readCharacteristic(charUuid: string): Promise<DataView> {
         const serviceUuid = this.serviceByCharacteristic.get(charUuid);
         const peripheral = this.peripheralByService.get(serviceUuid);
-        const data = peripheral.read(serviceUuid, charUuid);
+        const data = peripheral?.read(serviceUuid, charUuid);
+        if (!data) {
+            // The read returns nothing when the link is gone; say so instead of failing on `.buffer`
+            throw new Error('readCharacteristic error: no data from the radio, device may be disconnected');
+        }
         return new DataView(data.buffer);
     }
 
