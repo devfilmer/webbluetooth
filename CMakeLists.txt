@@ -11,6 +11,27 @@ elseif(WIN32)
     set(CMAKE_SYSTEM_VERSION "10.0.22000.0" CACHE STRING "Windows version" FORCE)
 endif()
 
+# Apply local fixes to the SimpleBLE checkout (skipped when already applied).
+# simpleble-keep-device-valid: without it, a device that disconnects is never reported by a scan again
+# until the process restarts, because BlueZ removing one interface (Battery1) made the device look removed.
+file(GLOB SIMPLEBLE_PATCHES ${CMAKE_CURRENT_SOURCE_DIR}/patches/*.patch)
+foreach(PATCH ${SIMPLEBLE_PATCHES})
+    execute_process(COMMAND git apply --reverse --check ${PATCH}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SimpleBLE
+        RESULT_VARIABLE PATCH_ALREADY_APPLIED
+        OUTPUT_QUIET ERROR_QUIET
+    )
+    if (NOT PATCH_ALREADY_APPLIED EQUAL 0)
+        execute_process(COMMAND git apply ${PATCH}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SimpleBLE
+            RESULT_VARIABLE PATCH_RESULT
+        )
+        if (NOT PATCH_RESULT EQUAL 0)
+            message(FATAL_ERROR "Could not apply ${PATCH} to SimpleBLE")
+        endif()
+    endif()
+endforeach()
+
 add_subdirectory(SimpleBLE/simplecble)
 
 # Add Node bindings.

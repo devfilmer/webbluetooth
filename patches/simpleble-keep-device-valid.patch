@@ -1,0 +1,18 @@
+diff --git a/simpledbus/src/advanced/Proxy.cpp b/simpledbus/src/advanced/Proxy.cpp
+index c7d597e2..92765fca 100644
+--- a/simpledbus/src/advanced/Proxy.cpp
++++ b/simpledbus/src/advanced/Proxy.cpp
+@@ -230,8 +230,12 @@ bool Proxy::path_remove(const std::string& path, SimpleDBus::Holder options) {
+     // `options` contains an array of strings of the interfaces that need to be removed.
+ 
+     if (path == _path) {
+-        invalidate();
++        // Only some interfaces may be removed (BlueZ drops org.bluez.Battery1 from a device when it disconnects).
++        // The object still exists then, so it must stay valid and keep receiving signals.
+         interfaces_unload(options);
++        if (!interfaces_loaded()) {
++            invalidate();
++        }
+         return path_prune();
+     }
+ 
